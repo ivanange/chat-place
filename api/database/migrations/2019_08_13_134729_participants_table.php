@@ -28,6 +28,7 @@ class ParticipantsTable extends Migration
             //indexes
             $table->foreign('cid')->references('id')->on('chats');
             $table->foreign('uid')->references('id')->on('users');
+            $table->primary(['cid', 'uid']);
 
 
         });

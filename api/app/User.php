@@ -36,4 +36,24 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+
+    public function chats () {
+        return $this->belongsToMany('App\chat', 'participants', 'uid', 'cid')
+                        ->as("participants")
+                        ->withPivot("permissions", "time");
+    }
+
+    public function messages () {
+        return $this->belongsToMany('App\message', 'messaging', 'uid', 'mid')
+                        ->as("messaging")
+                        ->withPivot("state", "time");
+    }
+
+    public function blockedUsers () {
+        return $this->belongsToMany('App\user', 'block', 'blockerid', 'blockedid')
+                        ->as("blocks");
+    }
+
+
 }
