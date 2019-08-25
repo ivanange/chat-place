@@ -22,8 +22,8 @@ class MesaagesTable extends Migration
             // colums 
             $table->bigIncrements('id');
             $table->unsignedTinyInteger('type')->default(1);
-            $table->text('text');
-            $table->string('file', 500);
+            $table->text('text')->nullable();
+            $table->string('file', 500)->nullable();
         });
     }
 

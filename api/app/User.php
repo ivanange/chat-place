@@ -5,55 +5,65 @@ namespace App;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable
+class User extends Authenticatable implements JWTSubject
 {
+
     use Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
-    protected $fillable = [
-        'name', 'email', 'password',
-    ];
+    // states
+    const UNAUTHENTICATED = 0;
+    const AUTHENTICATED = 1;
+    const BANNED = 2;
+    
+    //visibility
+    const INVISIBLE = 0;
+    const VISIBLE = 1;
+    const PARTIALLY_VISIBLE = 2;
 
-    /**
-     * The attributes that should be hidden for arrays.
-     *
-     * @var array
-     */
-    protected $hidden = [
-        'password', 'remember_token',
-    ];
+    protected $guarded = ["id"];
+    public $timestamps = false;
 
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
-     */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-    ];
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
 
+    public function getJWTCustomClaims()
+    {
+        return [];
+    }
+    public function setPasswordAttribute($password)
+    {
+        if ( !empty($password) ) {
+            $this->attributes['password'] = bcrypt($password);
+        }
+    }
 
     public function chats () {
         return $this->belongsToMany('App\chat', 'participants', 'uid', 'cid')
-                        ->as("participants")
-                        ->withPivot("permissions", "time");
+                        ->using("App\participants");
+    }
+
+    public function chat (int $chatId ) {
+        return $this->belongsToMany('App\chat', 'participants', 'uid', 'cid')
+                        ->wherePivot("cid", $chatId)
+                        ->using("App\participants");
     }
 
     public function messages () {
         return $this->belongsToMany('App\message', 'messaging', 'uid', 'mid')
-                        ->as("messaging")
-                        ->withPivot("state", "time");
+                        ->withPivot("state", "time", 'cid');
     }
 
     public function blockedUsers () {
         return $this->belongsToMany('App\user', 'block', 'blockerid', 'blockedid')
                         ->as("blocks");
     }
+
+    // cannot implement this here, have to create a participants model and a messaging model 
+
 
 
 }

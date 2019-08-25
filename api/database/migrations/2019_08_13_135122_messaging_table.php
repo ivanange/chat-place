@@ -20,16 +20,13 @@ class MessagingTable extends Migration
             $table->collation = 'utf8_unicode_ci';
 
             // colums 
-            $table->unsignedBigInteger('cid');
-            $table->unsignedBigInteger('uid');
-            $table->unsignedBigInteger('mid');
+            $table->unsignedBigInteger('uid')->index();
+            $table->unsignedBigInteger('cid')->index();
+            $table->unsignedBigInteger('mid')->index();
             $table->unsignedTinyInteger('state')->default(0);
             $table->dateTime('time');
 
             //indexes
-            $table->foreign('cid')->references('id')->on('chats');
-            $table->foreign('uid')->references('id')->on('users');
-            $table->foreign('mid')->references('id')->on('messages');
             $table->primary(['cid', 'uid', 'mid']);
 
         });

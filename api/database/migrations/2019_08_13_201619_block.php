@@ -24,8 +24,6 @@ class Block extends Migration
              $table->unsignedBigInteger('blockedid');
 
              //indexes
-             $table->foreign('blockerid')->references('id')->on('users');
-             $table->foreign('blockedid')->references('id')->on('users');
              $table->primary(['blockerid', 'blockedid']);
         });
     }

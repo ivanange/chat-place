@@ -22,11 +22,12 @@ class UsersTable extends Migration
             // colums 
             $table->bigIncrements('id');
             $table->string('name', 100);
-            $table->string('email', 100);
-            $table->string('avatar', 500);
+            $table->string('email', 100)->unique();
+            $table->string('phone', 50)->unique()->nullable();
+            $table->string('avatar', 500)->nullable();
             $table->string('desc', 500)->nullable();
             $table->string('password', 500);
-            $table->text('settings');
+            $table->text('settings')->nullable();
             $table->unsignedTinyInteger('state')->default(0);
             $table->unsignedTinyInteger('visibility')->default(1);
             $table->string('link', 100)->unique();
