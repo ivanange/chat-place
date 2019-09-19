@@ -26,16 +26,16 @@ Route::group([], function () {
 
         Route::get("/{id}", function (Request $request, int $cid) {
             return messageResource::collection( 
-                chat::find($cid)->messages()->when($request->time, function ($q) use($request) {
+                chat::find($cid)->messages()->orderBy('time')->when($request->time, function ($q) use($request) {
                     $q->where('time', '>=', $request->time); 
-                })->when($request->search, function ($q) {
+                })->when($request->search, function ($q) use($request) {
                     $q->where('text', 'like', "%{$request->search}%"); 
                 })->get());
         });
 
         Route::get("/{string}", function (Request $request, string $string) {
             return messageResource::collection( 
-                chat::find($cid)->messages()->when($request->time, function ($q) {
+                chat::find($cid)->messages()->orderBy('time')->when($request->time, function ($q) {
                     $q->where('time', '>=', $request->time); 
                 })->when($request->search, function ($q) {
                     $q->where('text', 'like', "%{$request->search}%"); 
@@ -46,8 +46,13 @@ Route::group([], function () {
 
     Route::prefix("/chat")->group(function () {
 
-        Route::get("/{id?}", function (Request $request, int $uid = null ) {
-            return  chatResource::collection( User::find($uid ?? Auth::getAuthIdentifier() )->chats );
+        Route::get("/", function (Request $request ) {
+            return  chatResource::collection( 
+                User::find( Auth::getAuthIdentifier() )->chats()->when( $request->search, function ($q) {
+                    $q->where("title", "like","{$request->search}")
+                    ->orWhere("desc", "like", "{$request->search}");
+                }) 
+            );
         });
 
         Route::get("/{string?}", function (Request $request, string $string = null ) {
