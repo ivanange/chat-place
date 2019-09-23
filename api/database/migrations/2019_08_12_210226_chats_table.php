@@ -26,6 +26,7 @@ class ChatsTable extends Migration
             $table->string('desc', 500)->nullable();
             $table->string('avatar', 500)->nullable();
             $table->string('link', 100)->nullable();
+            $table->unsignedTinyInteger('status')->default(0);
 
             //indexes
             $table->index(["title", "link"]);

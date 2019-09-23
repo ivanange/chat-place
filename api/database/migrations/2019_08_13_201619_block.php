@@ -25,6 +25,8 @@ class Block extends Migration
 
              //indexes
              $table->primary(['blockerid', 'blockedid']);
+             $table->foreign('blockerid')->references('id')->on('users');
+             $table->foreign('blockedid')->references('id')->on('users');
         });
     }
 

@@ -28,6 +28,9 @@ class MessagingTable extends Migration
 
             //indexes
             $table->primary(['cid', 'uid', 'mid']);
+            $table->foreign('cid')->references('id')->on('chats');
+            $table->foreign('uid')->references('id')->on('users');
+            $table->foreign('mid')->references('id')->on('messages');
 
         });
     }

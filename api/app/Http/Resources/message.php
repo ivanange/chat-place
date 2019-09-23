@@ -15,6 +15,7 @@ class message extends JsonResource
     public function toArray($request)
     {
         return [
+            "id" => $this->id,
             "type" => $this->type,
             "text" => $this->text,
             "file" => $this->file,

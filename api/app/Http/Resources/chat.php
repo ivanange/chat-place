@@ -16,12 +16,15 @@ class chat extends JsonResource
     public function toArray($request)
     {
         return [
+            "id" => $this->id,
             "type" => $this->type,
             $this->mergeWhen( $this->type !== constants::ONE2ONE, [
                 'title' => $this->title,
-                'desc' => $this->desc,
                 'avatar' => $this->avatar,
-                'link' => $this->link,
+                $this->mergeWhen( $request->details, [
+                    'desc' => $this->desc,
+                    'link' => $this->link,
+                ])
             ])
         ];
     }

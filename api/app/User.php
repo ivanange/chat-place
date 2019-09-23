@@ -16,6 +16,7 @@ class User extends Authenticatable implements JWTSubject
     const UNAUTHENTICATED = 0;
     const AUTHENTICATED = 1;
     const BANNED = 2;
+    const DELETED = 3;
     
     //visibility
     const INVISIBLE = 0;
@@ -24,6 +25,10 @@ class User extends Authenticatable implements JWTSubject
 
     protected $guarded = ["id"];
     public $timestamps = false;
+
+    public static function search( int $id ) {
+        return User::where([["id", "=", $id],["state", "<>", User::DELETED]])->first();
+    }
 
     public function getJWTIdentifier()
     {
@@ -43,13 +48,13 @@ class User extends Authenticatable implements JWTSubject
 
     public function chats () {
         return $this->belongsToMany('App\chat', 'participants', 'uid', 'cid')
-                        ->using("App\participants");
+                        ->using("App\participants")->withPivot("uid", "time", 'cid');
     }
 
     public function chat (int $chatId ) {
-        return $this->belongsToMany('App\chat', 'participants', 'uid', 'cid')
+        return $this->belongsToMany('App\chat', 'participants', 'uid', 'cid', 'permissions')
                         ->wherePivot("cid", $chatId)
-                        ->using("App\participants");
+                        ->using("App\participants")->withPivot("uid", "time", 'cid', 'permissions');
     }
 
     public function messages () {
