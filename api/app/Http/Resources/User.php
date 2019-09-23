@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Auth;
 
 class User extends JsonResource
 {
@@ -14,7 +15,7 @@ class User extends JsonResource
      */
     public function toArray($request)
     {
-        $userId = Auth::getAuthIdentifier();
+        $userId = Auth::id();
         $detail = $request->input('details') ?? false;
         return [
             'id' => $this->id,

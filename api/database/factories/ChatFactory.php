@@ -6,7 +6,7 @@ use App\chat;
 use Faker\Generator as Faker;
 
 $factory->define(chat::class, function (Faker $faker) {
-    $type = rand(0,3);
+    $type = rand(0,2);
     return [
         "type" => $type,
         "title" => $type !== chat::ONE2ONE ? Str::random(40) : null,
