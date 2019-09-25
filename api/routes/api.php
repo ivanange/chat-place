@@ -50,7 +50,11 @@ Route::middleware(['auth:api'])->group( function () {
             $chat = chat::search($cid);
 
             return ( $chat and $chat->hasParticipant(Auth::id())  ) ?   
+<<<<<<< HEAD
                     messageResource( message::whereRAW(" mid = $mid and ( state & ".message::DELETED."= 0 ) ") ) :
+=======
+                    messageResource( message::search($mid) ) :
+>>>>>>> master
                     response()->json(["error" =>  "Not found"], 404);
         });
 
@@ -163,7 +167,11 @@ Route::middleware(['auth:api'])->group( function () {
 
         Route::delete("", function (Request $request) {
             $id = Auth::id();
+<<<<<<< HEAD
             $user = User::where([["id", "=", $id],["state", "<>", User::DELETED]])->first();
+=======
+            $user = User::serach($id);
+>>>>>>> master
 
             if ( $user->id ) {
                 $user->state = User::DELETED;

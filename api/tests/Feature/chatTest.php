@@ -19,10 +19,25 @@ class chatTest extends TestCase
      *
      * @return void
      */
+
+    public $baseUrl = "api/chat";
+
+    public function testChatGetAuth () {
+        $cid = user::where("id", "<>", $this->id)
+                ->get()
+                ->random()
+                ->chats()
+                ->first()->id;
+
+       $response =  $this
+        ->setToken($this)
+        ->getJSon($this->baseUrl."/$cid")->assertStatus(401);
+    }
+
     public function testChats() {
 
         $response = $this->setToken($this)
-                    ->getJson("api/chat");
+                    ->getJson($this->baseUrl);
         
         $this->assertEquals( 
             collect( 
@@ -42,12 +57,26 @@ class chatTest extends TestCase
         $cid = user::find($this->id)->chats()->pluck("id")->random();
 
         $response = $this->setToken($this)
-                    ->getJson("api/chat/$cid");
+                    ->getJson($this->baseUrl."/$cid");
         
         $this->assertJsonStringEqualsJsonString( 
             json_encode( $response->getData() ), 
             json_encode( new chatResource( chat::find($cid) ) ) 
         );
+    }
+
+    public function testDeleteChat() {
+        $cid = user::find($this->id)
+                ->chats()
+                ->get()
+                ->pluck("id")
+                ->random();
+        $this
+        ->setToken($this)
+        ->json("delete", $this->baseUrl."/$cid")
+        ->assertOk();
+
+        $this->assertNull( chat::search($cid)->id );
     }
 
 }
