@@ -14,7 +14,7 @@ class UserTest extends TestCase
 
     public function testAuth()
     {
-        $response = $this->withHeaders(["Accept"=>"application/json"])->get('api/chat/');
+        $response = $this->withHeaders(["Accept"=>"application/json"])->get('api/chats/');
 
         $response->assertStatus(401);
 

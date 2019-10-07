@@ -42,6 +42,7 @@ class basicseeder extends Seeder
 
         $user = factory(App\User::class)->make();
         $user->email = "me@example.com";
+        $user->state = user::AUTHENTICATED;
         $user->save();
         factory(App\User::class, $users)->create();
         factory(App\chat::class, $chats)->create();

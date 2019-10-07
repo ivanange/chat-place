@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class message extends Model
 {
+    const UNREAD = 0;
     const READ = 1;
     const EDITED = 2;
     const FORWARDED = 4;
@@ -24,12 +25,23 @@ class message extends Model
 
 
     public $timestamps = false;
-    protected $guarded = ["id"];
+    protected $fillable = ["type", "text"];
 
-    public static function search( int $id ) {
-        return message::where(["id", "=", $id])
-                ->whereRAW("state & ".message::DELETED." = 0 ")
-                ->first();
+
+    public static function seek(  $cid  , int $mid ) {
+        $chat = !is_object($cid) ? chat::find($cid) : $cid;
+        return  $chat
+                ->messages()
+                ->where("id", "=", $mid)
+                ->whereRAW("state & ".message::DELETED." = 0 ");
+    }
+
+    public static function search(  $cid  , int $mid ) {
+        return message::seek($cid, $mid)->first();
+    }
+
+    public static function searchOrFail( $cid  , int $mid  ) {
+        return message::search($cid, $mid) ?? abort(404, "message:$id not found");
     }
 
     public function owners () {

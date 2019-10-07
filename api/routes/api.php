@@ -8,214 +8,71 @@ use App\participants;
 use App\Http\Resources\User as UserResource;
 use App\Http\Resources\chat as chatResource;
 use App\Http\Resources\message as messageResource;
+use App\Http\Requests\CreateMessage;
+use App\Http\Requests\GetMessage;
+use App\Http\Requests\UpdateMessage;
+use App\Http\Requests\CreateChat;
+use App\Http\Requests\UpdateChat;
+use App\Http\Requests\CreateUser;
+use App\Http\Requests\UpdateUser;
+use App\Http\Requests\CreateParticipant;
+use App\Http\Requests\UpdateParticipant;
 
 
 // middleware(['auth:api'])->
 Route::middleware(['auth:api'])->group( function () {
 
-    Route::prefix("/message")->group(function () {
+    Route::prefix("/chats")->group(function () {
 
-        Route::get("/{cid}", function (Request $request, int $cid) {
+        Route::post("", "ChatController@store" );
+        Route::post("/", "ChatController@store" );
+        Route::put("", "ChatController@update");
+        Route::put("/", "ChatController@update");
+        Route::get("", "ChatController@show");
+        Route::get("/{cid?}", "ChatController@show");
+        Route::get("/{string}", "ChatController@search");
+        Route::delete("/{cid}", "ChatController@destroy");
 
-            $chat = chat::search($cid);
-            if ( $chat and $chat->hasParticipant(Auth::id())  ) {
-                    return messageResource::collection( 
-                        $chat->messages()->orderBy('time')
-                        ->whereRAW("state & ".message::DELETED." = 0 ")
-                        ->when($request->time, function ($q) use($request) {
-                            $q->where('time', '>=', $request->time); 
-                        })->when($request->search, function ($q) use($request) {
-                            $q->where('text', 'like', "%{$request->search}%"); 
-                        })->when($request->interval, function ($q) use($request) {
-                            $q->whereBetween('time', explode(",", $request->interval) ); 
-                        })->when($request->before, function ($q) use($request) {
-                            $q->where('time', '<=', $request->before ); 
-                        })->when($request->edited, function ($q) use($request) {
-                            $q->where('state', "&", message::EDITED ); 
-                        })->when($request->read, function ($q) use($request) {
-                            $q->where('state', "&", message::READ ); 
-                        })->when($request->limit, function ($q) use($request) {
-                            $q->limit( $request->limit ); 
-                        })->get()
-                    );
-                }
-
-                else {
-                    return response()->json(["error" =>$chat ? "UNAUTHORIZED ACESS TO CHAT " : "Not found"], $chat ? 401 : 404);
-                }
+        Route::prefix("/{cid}/participants")->group(function () {
+            Route::post("", "ChatController@addParticipant");
+            Route::post("/", "ChatController@addParticipant");
+            Route::put("", "ChatController@updateParticipant");
+            Route::put("/", "ChatController@updateParticipant");
+            Route::delete("/{uid}", "ChatController@deleteParticipant");
+            Route::get("", "ChatController@viewParticipant");
+            Route::get("/{uid?}", "ChatController@viewParticipant");
         });
-
-        Route::get("/{cid}/{mid}", function (Request $request, int $cid, int $mid) {
-
-            $chat = chat::search($cid);
-
-            return ( $chat and $chat->hasParticipant(Auth::id())  ) ?   
-<<<<<<< HEAD
-                    messageResource( message::whereRAW(" mid = $mid and ( state & ".message::DELETED."= 0 ) ") ) :
-=======
-                    messageResource( message::search($mid) ) :
->>>>>>> master
-                    response()->json(["error" =>  "Not found"], 404);
-        });
-
-        Route::delete("/{mid}", function (Request $request, int $mid) {
-            $id = Auth::id();
-                // update state = state + state::deleted  from messaging where uid = $id and mid = $mid
-                DB::table("messaging")
-                ->where([ ["mid", "=", $mid],  ["uid", "=", $uid]] )
-                ->increment( "state", message::DELETED );
-        });
-
-        Route::delete("/{cid}/{mid}", function (Request $request, int $cid, int $mid ) {
-            $id = Auth::id();
-            $message  = message::find($mid);
-            $chat = chat::find($cid);
-            $participant = $chat->participant($id)->first();
-
-            if( $chat and $chat->hasParticipant($id)  and   (   $participant->pivot
-                                                                ->hasPermission(participants::DELETE_USER_MESSAGE) 
-                                                                or  $message
-                                                                    ->owner()
-                                                                    ->first()
-                                                                    ->id == $id )
-                ) {
-                    DB::table("messaging")
-                    ->where([ ["mid", "=", $mid], ["cid", "=", $cid],  ["uid", "=", $id]])
-                    ->increment( "state", message::DELETED );
-
-                    return response()->json(["sucess" => "done" ]);
-                }
-
-                return response()->json(["error" => "Not found \n hasparticipant: ".$chat->hasParticipant($id)."  chatId : $cid messageId : $mid message : $message participant : $participant chat : $chat id: $id " ]);
-
-            
-
-        });
-
-
-    });
-
-    Route::prefix("/chat")->group(function () {
-
-        Route::get("/{id?}", function (Request $request, int $cid = null ) {
-            if($cid) {
-                $chat = chat::search( $cid );
-                return !$chat->hasParticipant(Auth::id()) ?   response()->json(["error" => "UNAUTHORIZED ACESS TO CHAT"], 401) 
-                                                                                :   new chatResource(chat::search($cid)) ;
-            }
-            else {
-                return  chatResource::collection( Auth::user()
-                                                        ->chats()
-                                                        ->where("status", "<>", chat::DELETED)
-                                                        ->get()
-                                                        );
-            }
-            
-        });
-
-        Route::get("/{string}", function (Request $request, string $string ) {
-            
-            return  chatResource::collection( 
-                chat::where("status", "<>", chat::DELETED)->where(function ($q) {
-                    $q->whereIn("id", DB::table("participants")->where("uid", "=", Auth::id())->pluck("cid")->toArray() )
-                    ->orWhere("type", "&", chat::OPEN_G);
-                })->where(function ($q) use ($request, $string) {
-                    $q->where("title", "like",  "%$string%" )
-                    ->when( $request->deep, function ($q) {
-                        $q->orWhere("desc", "like", "%$string%" );
-                    });
-                })->get()
-            );
-        });
-
-        Route::delete("/{id}", function (Request $request, int $cid) {
-            $chat =  chat::find($cid);
-            $id = Auth::id();
-            if( $chat and $chat->hasParticipant($id)  and   $chat
-                                                        ->participant($id)->first()
-                                                        ->pivot
-                                                        ->hasPermission(participants::DELETE_CHAT) 
-            ) {
-                $chat->status = chat::DELETED; //  soft delete
-                $chat->save();
-                return  response()
-                        ->json(["sucess" => "CHAT DELETED SUCCESFULLY"] ) ;
-            }
-            return  response()->json(["error" => "UNAUTHORIZED ACESS TO CHAT"], 401);
-        });
-
         
     });
 
+    Route::prefix("/messages")->group(function () {
 
-    Route::prefix("/user")->group(function () {
-
-        // overwrite soft delete method and find method not to search for deleted users
-
-        Route::get("/{id}", function (Request $request, int $id ) {
-            return  new UserResource(User::find($id)) ;
-        });
-
-        Route::get("/{string}", function (Request $request, string $string ) {
-            return  UserResource::collection( 
-                User::where( [ ["visibility", "=", User::VISIBLE], ["name", "like",  "%$string%" ] ])
-                ->when( $request->deep, function ($q) {
-                    $q->orWhere("desc", "like", "%$string%" );
-                })->get()
-            );
-        });
-
-        Route::delete("", function (Request $request) {
-            $id = Auth::id();
-<<<<<<< HEAD
-            $user = User::where([["id", "=", $id],["state", "<>", User::DELETED]])->first();
-=======
-            $user = User::serach($id);
->>>>>>> master
-
-            if ( $user->id ) {
-                $user->state = User::DELETED;
-                $user->save();
-                return  response()
-                        ->json(["sucess" => "Account DELETED SUCCESFULLY"] ) ;
-            }
-            return  response()->json(["error" => "User not found"], 404);
-        });
+        Route::post("", "MessageController@store");
+        Route::post("/", "MessageController@store");
+        Route::put("", "MessageController@update");
+        Route::put("/", "MessageController@update");
+        Route::get("/{cid}", "MessageController@index");
+        Route::get("/{cid}/{mid}", "MessageController@show");
+        Route::delete("/{mid}", "MessageController@destroyAll");
+        Route::delete("/{cid}/{mid}", "MessageController@destroy");
 
     });
 
-    Route::prefix("/participant")->group(function () {
-
-        Route::get("/{id}", function (Request $request, int $cid ) {
-            $chat =  chat::find($cid);
-            if ( $chat->hasParticipant(Auth::id())  ) {
-                return UserResource::collection($chat->participants()
-                    ->when($request->search, function ($q) use($request) {
-                        $q->where('name', 'like', "%{$request->search}%")
-                        ->when( $request->deep, function ($q) {
-                            $q->orWhere("desc", "like", "%{$request->search}%" );
-                        }); 
-                    })->when($request->interval, function ($q) use($request) {
-                        $q->whereBetween('time', explode(",", $request->interval) ); 
-                    })->when($request->before, function ($q) use($request) {
-                        $q->where('time', '<=', $request->before ); 
-                    })->when($request->limit, function ($q) use($request) {
-                        $q->limit( $request->limit ); 
-                    })->get()
-                );
-            }
-            else {
-                return response()->json(["error" => "UNAUTHORIZED ACESS TO CHAT"], 401) ;
-            }
-        });
-
+    Route::prefix("/users")->group(function () {
+        Route::put("", "UserController@update");
+        Route::put("/", "UserController@update");
+        Route::get("", "UserController@me");
+        Route::get("/{id}", "UserController@show");
+        Route::get("/{string}", "UserController@index");
+        Route::delete("", "UserController@destroy");
 
     });
 
 });
 
-Route::post('/register', 'AuthController@register');
-Route::post('/login', 'AuthController@login');
+Route::post('/register', "UserController@store");
+Route::post('/user', "UserController@store");
+Route::post('/login', 'AuthController@login')->name('login');
 Route::get('/login', 'AuthController@login')->name('login');
 Route::post('/logout', 'AuthController@logout');
 
@@ -223,8 +80,11 @@ Route::fallback(function () {
     return response()->json(["status"=>404, "description"=> "Resource not found"], 404);
 });
 
-
-
-
+Route::get("/test", function (Request $request) {
+    $user = user::first();
+    $user->chats()->first()->pivot->permissions = 200;
+    $user->save();
+    return response()->json($user->chats()->get(), 200);
+});
 
 

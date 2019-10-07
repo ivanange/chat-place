@@ -14,23 +14,16 @@ class AuthController extends Controller
         auth()->setDefaultDriver('api');
     }
 
-    public function register(Request $request)
-    {
-        $user = new User;
-        $user->fill($request->all())->fill(["link"=>"a custom generated link".rand()
-            ])->save();
-
-        $token = auth()->login($user);
-
-        return $this->respondWithToken($token);
-    }
-
     public function login()
     {
         $credentials = request(['email', 'password']);
+        $user = user::where([
+            ["email", "=", $credentials["email"] ?? ""], 
+            ["state", "=", user::AUTHENTICATED]
+        ])->first();
 
-        if (! $token = auth()->attempt($credentials)) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        if ( ! ($user and $token = auth()->login($user) ) ) {
+            return response()->json(['error' => 'Unauthorized',], 401);
         }
 
         return $this->respondWithToken($token);

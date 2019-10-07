@@ -33,6 +33,12 @@ class User extends JsonResource
                 'desc' => $this->desc,
                 'link' => $this->link,
             ]),
+
+            $this->mergeWhen($this->pivot, [
+                "permissions" => $this->pivot ? $this->pivot->permissinons : null,
+                "time" => $this->pivot ? $this->pivot->time : null
+            ]),
+
             
         ];
     }
